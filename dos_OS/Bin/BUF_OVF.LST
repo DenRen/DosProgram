@@ -1,0 +1,231 @@
+Turbo Assembler	 Version 4.1	    05/11/20 12:15:40	    Page 1
+buf_ovf.asm
+
+
+
+      1				     ;==========================================================
+      2				     ;
+      3				     ; BUF_OVF.ASM (c) Ded, 2010
+      4				     ; Demonstates buffer overflow problem.
+      5				     ;
+      6				     ; NB: File	code page is 866.
+      7				     ;
+      8				     ;==========================================================
+      9				     ;$				       ; A very	important dollar
+     10
+     11				     locals @@
+     12
+     13	0000			     .model tiny
+     14	0000			     .code
+     15				     org 100h
+     16
+     17				     ;--------------------------------------------
+     18
+     19	0100			     Start:
+     20	0100  90				     nop
+     21	0101  90				     nop
+     22	0102  90				     nop
+     23	0103  BA 01E8r				     mov dx, offset __bss ; Just for fun
+     24	0106  E8 00C9				     call PutS
+     25
+     26	0109  E8 007A				     call Main
+     27
+     28	010C  BA 0180r				     mov dx, offset CrLfMsg
+     29	010F  E8 00C0				     call PutS
+     30
+     31	0112  E8 00B7				     call Exit
+     32	0115  90				     nop
+     33	0116  90				     nop
+     34	0117  90				     nop
+     35				     ;--------------------------------------------
+     36
+     37	0118  0D 0A 45 6E 74 65	72+  PromptMsg	     db	 0dh, 0ah, 'Enter Admin	password:  $'
+     38	      20 41 64 6D 69 6E	20+
+     39	      70 61 73 73 77 6F	72+
+     40	      64 3A 20 20 24
+     41	0132  0D 0A 43 68 65 63	6B+  CheckingMsg     db	 0dh, 0ah, 'Checking the password: $'
+     42	      69 6E 67 20 74 68	65+
+     43	      20 70 61 73 73 77	6F+
+     44	      72 64 3A 20 24
+     45	014C  0D 0A 50 61 73 73	77+  CheckFailedMsg  db	 0dh, 0ah, 'Password check failed! $'
+     46	      6F 72 64 20 63 68	65+
+     47	      63 6B 20 66 61 69	6C+
+     48	      65 64 21 20 24
+     49	0166  0D 0A 59 6F 75 20	67+  AdminRightsMsg  db	 0dh, 0ah, 'You	got Admin rights.  $'
+     50	      6F 74 20 41 64 6D	69+
+     51	      6E 20 72 69 67 68	74+
+     52	      73 2E 20 20 24
+     53	0180  0D 0A 24		     CrLfMsg	     db	 0dh, 0ah, '$'
+     54
+     55	0183  47 4F 44		     AdminPwd	     db	'GOD'
+     56	      =0003		     AdminPwdLen     equ $ - AdminPwd
+     57
+Turbo Assembler	 Version 4.1	    05/11/20 12:15:40	    Page 2
+buf_ovf.asm
+
+
+
+     58				     ;--------------------------------------------
+     59
+     60	0186			     Main	     proc
+     61
+     62	0186  BA 0118r				     mov dx, offset PromptMsg
+     63	0189  E8 0046				     call PutS
+     64
+     65	018C  BF 01B1r				     mov di, offset Password
+     66	018F  57				     push di
+     67	0190  E8 0044				     call GetS
+     68	0193  5F				     pop di		  ; We ignore password length (very bad!)
+     69
+     70	0194  BA 0132r				     mov dx, offset CheckingMsg
+     71	0197  E8 0038				     call PutS
+     72	019A  8B D7				     mov dx, di
+     73	019C  E8 0033				     call PutS
+     74	019F  BA 0180r				     mov dx, offset CrLfMsg
+     75	01A2  E8 002D				     call PutS
+     76
+     77	01A5  BE 0183r				     mov si, offset AdminPwd
+     78	01A8  B9 0003				     mov cx, AdminPwdLen
+     79	01AB  FC				     cld		  ; si++ and di++ (see below)
+     80	01AC  F3> A6				     repe cmpsb		  ; while (cx--	&& ds:[si++] ==	es:[di++]) ;
+     81	01AE  EB 0B 90				     jmp @@Check
+     82
+     83				     ;		     ³
+     84				     ;		     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+     85				     ;-----									 ³
+     86	01B1  0A*(24)		     Password	     db	10 dup ('$')	  ; Placing buffer here	is dangerous!	 ³
+     87									  ; But	we've decided to do so...	 ³
+     88				     ;-----									 ³
+     89				     ;		     ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+     90				     ;		     ³
+     91				     ;		     ³ This code starts	IMMEDIATELY after buffer end:
+     92				     ;		     V
+     93
+     94	01BB  74 07		     @@Check:	     je	@@PasswordOK	  ; 75h	('u') --> jne
+     95									  ; So,	'1234567890u' will crack us.
+     96
+     97	01BD  BA 014Cr				     mov dx, offset CheckFailedMsg
+     98	01C0  E8 000F				     call PutS
+     99	01C3  C3				     ret
+    100
+    101	01C4  BA 0166r		     @@PasswordOK:   mov dx, offset AdminRightsMsg
+    102	01C7  E8 0008				     call PutS
+    103	01CA  C3				     ret
+    104
+    105	01CB					     endp
+    106
+    107	01CB  24				     db	'$'
+    108
+    109				     ;--------------------------------------------
+    110				     ; Exit to OS
+    111				     ; Entry: none
+    112				     ; Destr: n/a
+    113				     ;--------------------------------------------
+    114
+Turbo Assembler	 Version 4.1	    05/11/20 12:15:40	    Page 3
+buf_ovf.asm
+
+
+
+    115	01CC			     Exit	     proc
+    116	01CC  B8 4C00				     mov ax, 4c00h
+    117	01CF  CD 21				     int 21h
+    118	01D1  C3				     ret
+    119	01D2					     endp
+    120
+    121				     ;--------------------------------------------
+    122				     ; Print a string
+    123				     ; Entry: DX -> string to print
+    124				     ; Destr: AH
+    125				     ;--------------------------------------------
+    126
+    127	01D2			     PutS	     proc
+    128	01D2  B4 09				     mov ah, 09h
+    129	01D4  CD 21				     int 21h
+    130	01D6  C3				     ret
+    131	01D7					     endp
+    132
+    133				     ;--------------------------------------------
+    134				     ; Get a string
+    135				     ; Entry: DI --  string addr
+    136				     ; Exit:  DI --> end of string
+    137				     ; Destr: AX DI
+    138				     ;--------------------------------------------
+    139
+    140	01D7			     GetS	     proc
+    141
+    142	01D7  52				     push dx
+    143	01D8  FC				     cld		  ; inc	di (see	below)
+    144
+    145	01D9  B4 01		     @@NextChar:     mov ah, 01h
+    146	01DB  CD 21				     int 21h
+    147
+    148	01DD  3C 0D				     cmp al, 0dh
+    149	01DF  74 03				     je	@@StopInput
+    150
+    151	01E1  AA				     stosb		  ; { es:[di] =	al; inc	di; }
+    152	01E2  EB F5				     jmp @@NextChar
+    153
+    154	01E4  5A		     @@StopInput:    pop dx
+    155
+    156	01E5  C3				     ret
+    157	01E6					     endp
+    158
+    159				     ;--------------------------------------------
+    160
+    161	01E6  0D 0A				     db	0dh, 0ah	  ; Just to visually divide binary code
+    162									  ; from ASM text appended.
+    163
+    164	01E8  21 24		     __bss:	     db	'!$'		  ; copy/b BUF_OVF.COM + BUF.OVF.ASM
+    165									  ; and	change these bytes to 0dh, 0ah,	for example
+    166
+    167				     end	     Start
+Turbo Assembler	 Version 4.1	    05/11/20 12:15:40	    Page 4
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "05/11/20"
+??FILENAME			  Text	 "buf_ovf "
+??TIME				  Text	 "12:15:40"
+??VERSION			  Number 040A
+@32BIT				  Text	 0
+@@CHECK				  Near	 DGROUP:01BB
+@@NEXTCHAR			  Near	 DGROUP:01D9
+@@PASSWORDOK			  Near	 DGROUP:01C4
+@@STOPINPUT			  Near	 DGROUP:01E4
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0101H
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 BUF_OVF
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+ADMINPWD			  Byte	 DGROUP:0183
+ADMINPWDLEN			  Number 0003
+ADMINRIGHTSMSG			  Byte	 DGROUP:0166
+CHECKFAILEDMSG			  Byte	 DGROUP:014C
+CHECKINGMSG			  Byte	 DGROUP:0132
+CRLFMSG				  Byte	 DGROUP:0180
+EXIT				  Near	 DGROUP:01CC
+GETS				  Near	 DGROUP:01D7
+MAIN				  Near	 DGROUP:0186
+PASSWORD			  Byte	 DGROUP:01B1
+PROMPTMSG			  Byte	 DGROUP:0118
+PUTS				  Near	 DGROUP:01D2
+START				  Near	 DGROUP:0100
+__BSS				  Near	 DGROUP:01E8
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  0000 Word	  Public  DATA
+  _TEXT				  16  01EA Word	  Public  CODE
+

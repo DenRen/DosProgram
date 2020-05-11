@@ -1,0 +1,611 @@
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 1
+code_tem.asm
+
+
+
+      1	0000			     .model tiny
+      2	0000			     .code
+      3
+      4				     org 100h
+      5
+      6				     include mymacro.asm
+1     7	      =0024		     end_schr equ '$'
+1     8
+1     9				     ;___________________________
+1    10				     ; SI - "__________________"
+1    11				     ; DI - "___"
+1    12				     ;--------------------ÚÄÄÄÄÄ¿
+1    13				     ; AL, CX, ES, DI	  ³Input³
+1    14				     ;			  ÀÄÄÄÄÄÙ
+1    15				     ;------------------ÚÄÄÄÄÄÄÄ¿
+1    16				     ; CX => 0,	DI	³Destroy³
+1    17				     ;			ÀÄÄÄÄÄÄÄÙ
+1    18				     ;___________________________
+1    19				     strstr macro
+1    20					     mov al, end_schr
+1    21					     mov dx, di
+1    22
+1    23					     memstrlen
+1    24					     mov bx, di		     ; bx - length of DI
+1    25					     inc bx
+1    26					     cld
+1    27				     L_ss:   mov cx, bx
+1    28					     mov di, dx
+1    29
+1    30					     repe cmpsb
+1    31					     dec di
+1    32					     scasb
+1    33
+1    34					     jne L_ss
+1    35
+1    36					     sub si, bx
+1    37					     endm
+1    38				     ;___________________________
+1    39				     ;
+1    40				     ;--------------------ÚÄÄÄÄÄ¿
+1    41				     ; AL, CX, ES, DI	  ³Input³
+1    42				     ;			  ÀÄÄÄÄÄÙ
+1    43				     ;------------------ÚÄÄÄÄÄÄÄ¿
+1    44				     ; CX => 0,	DI	³Destroy³
+1    45				     ;			ÀÄÄÄÄÄÄÄÙ
+1    46				     ;___________________________
+1    47				     strcpy macro
+1    48					     mov al, end_schr
+1    49				     L_scpy: cmp byte ptr ds:[si], al
+1    50					     movsb
+1    51					     jne L_scpy
+1    52					     endm
+1    53				     ;___________________________
+1    54				     ;
+1    55				     ;--------------------ÚÄÄÄÄÄ¿
+1    56				     ; AL, CX, ES, DI	  ³Input³
+1    57				     ;			  ÀÄÄÄÄÄÙ
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 2
+code_tem.asm
+
+
+
+1    58				     ;------------------ÚÄÄÄÄÄÄÄ¿
+1    59				     ; CX => 0,	DI	³Destroy³
+1    60				     ;			ÀÄÄÄÄÄÄÄÙ
+1    61				     ;___________________________
+1    62				     strrchr macro
+1    63					     cld
+1    64					     mov al, end_schr
+1    65					     xor cx, cx
+1    66					     dec cx
+1    67					     repne scasb
+1    68					     dec di	     ; DI - end	string
+1    69
+1    70					     xor bx, bx
+1    71					     dec bx
+1    72					     sub bx, cx
+1    73					     mov cx, bx
+1    74
+1    75					     mov al, ah
+1    76					     std
+1    77					     repne scasb
+1    78					     inc di
+1    79					     mov bx, di	     ; Result
+1    80
+1    81					     endm
+1    82				     ;___________________________
+1    83				     ;	 This macro searches for
+1    84				     ; the position of the AH
+1    85				     ; characterint the	DS:SI
+1    86				     ; line. The position is
+1    87				     ; counted from zero. The
+1    88				     ; result is recorded in BX.
+1    89				     ;--------------------ÚÄÄÄÄÄ¿
+1    90				     ; AH, DS, SI	  ³Input³
+1    91				     ;			  ÀÄÄÄÄÄÙ
+1    92				     ;------------------ÚÄÄÄÄÄÄÄ¿
+1    93				     ; AL CX DI	BX DX	³Destroy³
+1    94				     ;			ÀÄÄÄÄÄÄÄÙ
+1    95				     ;___________________________
+1    96
+1    97				     strchr macro
+1    98					     xor cx, cx
+1    99					     dec cx
+1   100					     xor bx, bx
+1   101					     mov bl, end_schr
+1   102					     mov dx, di
+1   103					     cld
+1   104				     L_schr:
+1   105					     lodsb
+1   106					     cmp al, ah
+1   107					     je	short fin_schr
+1   108					     cmp al, bl
+1   109					     LOOPNE L_schr
+1   110				     fin_schr:
+1   111					     xor bx, bx
+1   112					     dec bx
+1   113					     sub bx, cx
+1   114					     add bx, dx; Result
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 3
+code_tem.asm
+
+
+
+1   115					     endm
+1   116				     ;___________________________
+1   117				     ; DANGEROUS!
+1   118				     ; Result DI
+1   119				     ;--------------------ÚÄÄÄÄÄ¿
+1   120				     ; ES:DI		  ³Input³
+1   121				     ;			  ÀÄÄÄÄÄÙ
+1   122				     ;------------------ÚÄÄÄÄÄÄÄ¿
+1   123				     ; AX, CX, DI	³Destroy³
+1   124				     ;			ÀÄÄÄÄÄÄÄÙ
+1   125				     ;___________________________
+1   126				     memstrlen macro
+1   127					     cld
+1   128					     mov al, end_schr
+1   129					     xor cx, cx
+1   130					     dec cx
+1   131					     repnz scasb
+1   132					     xor di, di
+1   133					     sub di, cx
+1   134					     dec di
+1   135					     dec di
+1   136					     endm
+1   137				     ;___________________________
+1   138				     ;	This macro compares th
+1   139				     ; DS:SI string with the
+1   140				     ; ES:DI string.
+1   141				     ;	The result if flagged.
+1   142				     ;--------------------ÚÄÄÄÄÄ¿
+1   143				     ; CX - quantity symb.³Input³
+1   144				     ; DS:SI - 1st	  ÀÄÄÄÄÄÙ
+1   145				     ; ES:DI - 2nd
+1   146				     ; Result: ZF
+1   147				     ;------------------ÚÄÄÄÄÄÄÄ¿
+1   148				     ; CX, DI		³Destroy³
+1   149				     ;			ÀÄÄÄÄÄÄÄÙ
+1   150				     ;___________________________
+1   151				     memcmp macro
+1   152					     cld
+1   153					     repz cmpsb
+1   154					     endm
+1   155				     ;___________________________
+1   156				     ;	This macro searches for
+1   157				     ; the number of the first
+1   158				     ; occurrence of the symbol
+1   159				     ; AL at the addres	ES:DI
+1   160				     ; The length of the incoming
+1   161				     ; array is	in BX.
+1   162				     ;	The final address is
+1   163				     ; recorded	in the BX,
+1   164				     ; relative	to the
+1   165				     ; starting	ES:DI
+1   166				     ;----------------------ÚÄÄÄÄÄ¿
+1   167				     ; AL - serched symb.   ³Input³
+1   168				     ; CX - length array    ÀÄÄÄÄÄÙ
+1   169				     ; ES:DI - pointer to a string
+1   170				     ;--------------------ÚÄÄÄÄÄÄÄ¿
+1   171				     ; CX, BX, DI	  ³Destroy³
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 4
+code_tem.asm
+
+
+
+1   172				     ;			  ÀÄÄÄÄÄÄÄÙ
+1   173				     ;___________________________
+1   174				     memchr macro
+1   175					     cld
+1   176					     repne scasb
+1   177					     sub bx, cx
+1   178					     dec bx
+1   179					     endm
+1   180				     ;___________________________
+1   181				     ;
+1   182				     ;--------------------ÚÄÄÄÄÄ¿
+1   183				     ; DS, DI, ES, SI	  ³Input³
+1   184				     ;			  ÀÄÄÄÄÄÙ
+1   185				     ;------------------ÚÄÄÄÄÄÄÄ¿
+1   186				     ; CX => 0,	DI	³Destroy³
+1   187				     ;			ÀÄÄÄÄÄÄÄÙ
+1   188				     ;___________________________
+1   189				     memcpy macro
+1   190					     cld
+1   191					     rep movsb
+1   192					     endm
+1   193
+1   194
+1   195				     ;___________________________
+1   196				     ;
+1   197				     ;--------------------ÚÄÄÄÄÄ¿
+1   198				     ; AL, CX, ES, DI	  ³Input³
+1   199				     ;			  ÀÄÄÄÄÄÙ
+1   200				     ;------------------ÚÄÄÄÄÄÄÄ¿
+1   201				     ; CX => 0,	DI	³Destroy³
+1   202				     ;			ÀÄÄÄÄÄÄÄÙ
+1   203				     ;___________________________
+1   204
+1   205				     memset macro
+1   206					     cld
+1   207					     rep stosb
+1   208					     endm
+1   209
+1   210
+1   211
+    212
+    213	0100			     Start:
+    214
+    215	      =0028		     x equ 40
+    216	      =000F		     y equ 15
+    217
+    218	      =0059		     Symb equ 'Y'
+    219
+    220	0100  E8 00C4		     call start_prog
+    221
+    222	      =0014		     X0	equ 20d
+    223	      =0005		     Y0	equ 5d
+    224	      =003C		     X1	equ 60d
+    225	      =000F		     Y1	equ 15d
+    226
+    227				     COMMENT^
+    228				     mov bx, (X0 shl 8)	or Y0
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 5
+code_tem.asm
+
+
+
+    229				     mov dx, (X1 shl 8)	or Y1
+    230
+    231
+    232				     call draw_window
+    233
+    234				     mov di, offset str2
+    235				     mov al, 'o'
+    236				     mov bx, 10
+    237				     memchr
+    238
+    239				     mov al, '#'
+    240				     xor cx, cx
+    241				     inc cx
+    242				     mov di, offset str2
+    243				     add di, bx
+    244				     memset
+    245
+    246				     mov si, offset str2
+    247				     mov di, offset str3
+    248
+    249				     mov cx, 14d
+    250				     memcmp
+    251
+    252				     ja	K
+    253
+    254				     mov ah, 09h
+    255				     mov dx, offset str2
+    256				     int 21h
+    257				     K:
+    258
+    259				     mov al, 'i'
+    260				     mov di, offset str2
+    261				     strchr
+    262
+    263				     mov ah, '-'
+    264				     mov di, offset str1
+    265				     strrchr
+    266
+    267				     mov si, offset str2
+    268				     mov di, offset str1
+    269				     strcpy
+    270				     ^
+    271	0103  BE 0000r		     mov si, offset str1
+    272	0106  BF 0038r		     mov di, offset str4
+    273				     strstr
+1   274	0109  B0 24			     mov al, end_schr
+1   275	010B  8B D7			     mov dx, di
+1   276
+1   277					     memstrlen
+2   278	010D  FC			     cld
+2   279	010E  B0 24			     mov al, end_schr
+2   280	0110  33 C9			     xor cx, cx
+2   281	0112  49			     dec cx
+2   282	0113  F2> AE			     repnz scasb
+2   283	0115  33 FF			     xor di, di
+2   284	0117  2B F9			     sub di, cx
+2   285	0119  4F			     dec di
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 6
+code_tem.asm
+
+
+
+2   286	011A  4F			     dec di
+1   287	011B  8B DF			     mov bx, di		     ; bx - length of DI
+1   288	011D  43			     inc bx
+1   289	011E  FC			     cld
+1   290	011F  8B CB		     L_ss:   mov cx, bx
+1   291	0121  8B FA			     mov di, dx
+1   292
+1   293	0123  F3> A6			     repe cmpsb
+1   294	0125  4F			     dec di
+1   295	0126  AE			     scasb
+1   296
+1   297	0127  75 F6			     jne L_ss
+1   298
+1   299	0129  2B F3			     sub si, bx
+    300
+    301	012B  B4 09		     mov ah, 09h
+    302	012D  8B D6		     mov dx, SI
+    303	012F  CD 21		     int 21h
+    304
+    305	0131  E8 009B		     call finish_prog
+    306
+    307				     include mylib.asm
+1   308	      =B800		     video_com equ 0b800h
+1   309	      =0050		     W equ 80d
+1   310	      =0019		     H equ 25d
+1   311
+1   312				     ;___________________________
+1   313				     ; Draws a rectangular window
+1   314				     ; along the coordinates of
+1   315				     ; diagonal	vertices.
+1   316				     ;--------------------ÚÄÄÄÄÄ¿
+1   317				     ; BX = (X0, Y0)	  ³Input³
+1   318				     ; DX = (X1, Y1)	  ÀÄÄÄÄÄÙ
+1   319				     ;------------------ÚÄÄÄÄÄÄÄ¿
+1   320				     ; AX BX CX	DX DI	³Destroy³
+1   321				     ;			ÀÄÄÄÄÄÄÄÙ
+1   322				     ;___________________________
+1   323	0134			     draw_window:
+1   324	      =000C			     BackGround	     equ 00001100b
+1   325	      =00CD			     Horiz	     equ 'Í'
+1   326	      =00BA			     Vertical	     equ 'º'
+1   327	      =00BB			     Upp_Right	     equ '»'
+1   328	      =00C9			     Upp_Left	     equ 'É'
+1   329	      =00C8			     Low_Left	     equ 'È'
+1   330	      =00BC			     Low_Right	     equ '¼'
+1   331	      =0020			     Empty_BG	     equ ' '
+1   332
+1   333	0134  8C C0			     mov ax, es	     ; Save ES
+1   334	0136  50			     push ax
+1   335	0137  B8 B800			     mov ax, video_com
+1   336	013A  8E C0			     mov es, ax
+1   337
+1   338	013C  32 E4			     xor ah, ah
+1   339	013E  B0 50			     mov al, W
+1   340	0140  F6 E3			     mul bl
+1   341	0142  33 C9			     xor cx, cx
+1   342	0144  8A CF			     mov cl, bh
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 7
+code_tem.asm
+
+
+
+1   343	0146  03 C1			     add ax, cx
+1   344	0148  D1 E0			     shl ax, 1
+1   345	014A  8B F8			     mov di, ax	     ; The DI is the begining of the window
+1   346
+1   347	014C  FC			     cld
+1   348
+1   349	014D  32 ED			     xor ch, ch
+1   350	014F  8A CE			     mov cl, dh
+1   351	0151  33 C0			     xor ax, ax
+1   352	0153  8A C7			     mov al, bh
+1   353	0155  2B C8			     sub cx, ax
+1   354	0157  49			     dec cx	     ; CX = delta x
+1   355
+1   356	0158  8A FA			     mov bh, dl
+1   357	015A  2A FB			     sub bh, bl
+1   358	015C  D1 EB D1 EB D1 EB	D1+	     shr bx, 8
+    359	      EB D1 EB D1 EB D1	EB+
+    360	      D1 EB
+1   361	016C  FE CB			     dec bl	     ; BL = delta y
+1   362	016E  8A F9			     mov bh, cl	     ; BH = delta x
+1   363
+1   364					     ; Draw upper line
+1   365	0170  B8 0CC9			     mov ax, (BackGround shl 8)	or Upp_Left
+1   366	0173  AB			     stosw
+1   367
+1   368	0174  33 C9			     xor cx, cx
+1   369	0176  8A CF			     mov cl, bh
+1   370	0178  B8 0CCD			     mov ax, (BackGround shl 8)	or Horiz
+1   371	017B  F3> AB			     rep stosw
+1   372
+1   373	017D  B8 0CBB			     mov ax, (BackGround shl 8)	or Upp_Right
+1   374	0180  AB			     stosw
+1   375
+1   376					     ; Draw the	middle lines (CX == 0)
+1   377	0181  33 D2			     xor dx,dx
+1   378
+1   379	0183  8A D3			     mov dl, bl	     ; DL = delta y
+1   380	0185  81 C7 00A0	     L:	     add di, W*2
+1   381	0189  8A CF			     mov cl, bh
+1   382	018B  D1 E1			     shl cx, 1
+1   383	018D  2B F9			     sub di, cx
+1   384	018F  83 EF 04			     sub di, 4
+1   385
+1   386	0192  B8 0CBA			     mov ax, (BackGround shl 8)	or Vertical
+1   387	0195  AB			     stosw
+1   388	0196  B8 0C20			     mov ax, (BackGround shl 8)	or Empty_BG
+1   389	0199  8A CF			     mov cl, bh
+1   390	019B  F3> AB			     rep stosw
+1   391	019D  B8 0CBA			     mov ax, (BackGround shl 8)	or Vertical
+1   392	01A0  AB			     stosw
+1   393
+1   394	01A1  FE CA			     dec dl
+1   395	01A3  75 E0			     jnz L
+1   396
+1   397	01A5  81 C7 00A0		     add di, W*2
+1   398	01A9  8A CF			     mov cl, bh
+1   399	01AB  D1 E1			     shl cx, 1
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 8
+code_tem.asm
+
+
+
+1   400	01AD  2B F9			     sub di, cx
+1   401	01AF  83 EF 04			     sub di, 4
+1   402
+1   403				     ; Draw bottom line
+1   404	01B2  B8 0CC8			     mov ax, (BackGround shl 8)	or Low_Left
+1   405	01B5  AB			     stosw
+1   406
+1   407	01B6  33 C9			     xor cx, cx
+1   408	01B8  8A CF			     mov cl, bh
+1   409	01BA  B8 0CCD			     mov ax, (BackGround shl 8)	or Horiz
+1   410	01BD  F3> AB			     rep stosw
+1   411
+1   412	01BF  B8 0CBC			     mov ax, (BackGround shl 8)	or Low_Right
+1   413	01C2  AB			     stosw
+1   414
+1   415	01C3  58			     pop ax	     ; Load saved ES
+1   416	01C4  8E C0			     mov es, ax
+1   417
+1   418	01C6  C3			     ret
+1   419
+1   420
+1   421
+1   422
+1   423
+1   424
+1   425
+1   426
+1   427
+1   428
+1   429	01C7			     start_prog:
+1   430	01C7  B4 09			     mov ah, 09h
+1   431	01C9  BA 01EDr			     mov dx, offset msg_start_prog
+1   432	01CC  CD 21			     int 21h
+1   433	01CE  C3			     ret
+1   434
+1   435	01CF			     finish_prog:
+1   436	01CF  B4 09			     mov ah, 09h
+1   437	01D1  BA 0202r			     mov dx, offset msg_finish_prog
+1   438	01D4  CD 21			     int 21h
+1   439
+1   440	01D6  B8 4C00			     mov ax, 4C00h
+1   441	01D9  CD 21			     int 21h
+1   442	01DB  C3			     ret
+1   443
+1   444	01DC			     resident_finish_prog:
+1   445	01DC  B4 31			     mov ah, 31h
+1   446	01DE  BA 003Dr			     mov dx, offset TheEnd
+1   447	01E1  D1 EA D1 EA D1 EA	D1+	     shr dx, 4
+    448	      EA
+1   449	01E9  42			     inc dx
+1   450	01EA  CD 21			     int 21h
+1   451
+1   452	01EC  C3			     ret
+1   453
+1   454	      =000D		     CR	     equ 13
+1   455	      =000A		     LF	     equ 10
+1   456	      =	CR, LF		     CRLF    equ CR, LF
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 9
+code_tem.asm
+
+
+
+1   457	      =	CR, LF,	'$'	     endl    equ CRLF, '$'
+1   458
+1   459	01ED  50 72 6F 67 72 61	6D+  msg_start_prog  db	'Program started...',	     endl
+    460	      20 73 74 61 72 74	65+
+    461	      64 2E 2E 2E 0D 0A	24
+1   462	0202  50 72 6F 67 72 61	6D+  msg_finish_prog db	'Program finished.',	     endl
+    463	      20 66 69 6E 69 73	68+
+    464	      65 64 2E 0D 0A 24
+1   465
+    466
+    467	0216			     .data
+    468
+    469	0000  4D 65 6F 77 2D 6D	65+  str1 db "Meow-meow. I am a	",  endl
+    470	      6F 77 2E 20 49 20	61+
+    471	      6D 20 61 20 02 0D	0A+
+    472	      24
+    473	0016  53 65 63 6F 6E 64	20+  str2 db "Second string3",	     endl
+    474	      73 74 72 69 6E 67	33+
+    475	      0D 0A 24
+    476	0027  53 65 63 6F 6E 64	20+  str3 db "Second string2",	     endl
+    477	      73 74 72 69 6E 67	32+
+    478	      0D 0A 24
+    479	0038  6D 65 6F 77 24	     str4 db "meow",		     end_schr
+    480
+    481	003D			     TheEnd: end Start
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 10
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "03/03/20"
+??FILENAME			  Text	 "code_tem"
+??TIME				  Text	 "09:39:13"
+??VERSION			  Number 040A
+@32BIT				  Text	 0
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0101H
+@CURSEG				  Text	 _DATA
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 CODE_TEM
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+BACKGROUND			  Number 000C
+CR				  Number 000D
+CRLF				  Text	 CR, LF
+DRAW_WINDOW			  Near	 DGROUP:0134
+EMPTY_BG			  Number 0020
+ENDL				  Text	 CR, LF, '$'
+END_SCHR			  Number 0024
+FINISH_PROG			  Near	 DGROUP:01CF
+H				  Number 0019
+HORIZ				  Number 00CD
+L				  Near	 DGROUP:0185
+LF				  Number 000A
+LOW_LEFT			  Number 00C8
+LOW_RIGHT			  Number 00BC
+L_SS				  Near	 DGROUP:011F
+MSG_FINISH_PROG			  Byte	 DGROUP:0202
+MSG_START_PROG			  Byte	 DGROUP:01ED
+RESIDENT_FINISH_PROG		  Near	 DGROUP:01DC
+START				  Near	 DGROUP:0100
+START_PROG			  Near	 DGROUP:01C7
+STR1				  Byte	 DGROUP:0000
+STR2				  Byte	 DGROUP:0016
+STR3				  Byte	 DGROUP:0027
+STR4				  Byte	 DGROUP:0038
+SYMB				  Number 0059
+THEEND				  Near	 DGROUP:003D
+UPP_LEFT			  Number 00C9
+UPP_RIGHT			  Number 00BB
+VERTICAL			  Number 00BA
+VIDEO_COM			  Number B800
+W				  Number 0050
+X				  Number 0028
+X0				  Number 0014
+X1				  Number 003C
+Y				  Number 000F
+Y0				  Number 0005
+Y1				  Number 000F
+Turbo Assembler	 Version 4.1	    03/03/20 09:39:13	    Page 11
+Symbol Table
+
+
+
+
+Macro Name
+
+MEMCHR
+MEMCMP
+MEMCPY
+MEMSET
+MEMSTRLEN
+STRCHR
+STRCPY
+STRRCHR
+STRSTR
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  003D Word	  Public  DATA
+  _TEXT				  16  0216 Word	  Public  CODE
+
